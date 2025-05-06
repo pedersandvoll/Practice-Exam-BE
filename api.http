@@ -1,0 +1,41 @@
+@hostname=localhost
+@port=3000
+@host=http://{{hostname}}:{{port}}
+@bearer_token = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBlZGVyc2FuZHZvbGxAZmFzdG1haWwuY29tIiwiZXhwIjoxNzQ2NTM3MTUwLCJ1c2VyaWQiOjEsInVzZXJuYW1lIjoiUGVkZXIgU2FuZHZvbGwifQ.rq6g0FXVgjsNjjTuefRjpReekvdEHVer3XQ9SKvSZGY
+
+### hello gorm
+GET {{host}}/
+
+### register user
+POST {{host}}/register
+Content-Type: application/json
+
+{
+    "email": "pedersandvoll@fastmail.com",
+    "name": "Peder Sandvoll",
+    "password": "SuperSecretPassword123"
+}
+
+### login user
+POST {{host}}/login
+Content-Type: application/json
+
+{
+    "email": "pedersandvoll@fastmail.com",
+    "password": "SuperSecretPassword123"
+}
+
+### create customer
+POST {{host}}/api/customers/create
+Content-Type: application/json
+Authorization: {{bearer_token}}
+
+{
+    "name": "customer1"
+}
+
+### get customers
+GET {{host}}/api/customers
+Content-Type: application/json
+Authorization: {{bearer_token}}
+
