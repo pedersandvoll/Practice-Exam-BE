@@ -22,6 +22,7 @@ func Routes(app *fiber.App, h *handlers.Handlers) {
 
 	api.Post("/complaints/create", h.RegisterComplaint)
 	api.Put("/complaints/edit/:id", h.EditComplaint)
+	api.Get("/complaints/:id", h.GetComplaintById)
 	api.Get("/complaints", h.GetComplaints)
 
 	api.Post("/comments/create/:id", h.AddComplaintComment)

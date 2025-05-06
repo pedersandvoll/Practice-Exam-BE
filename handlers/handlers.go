@@ -329,6 +329,25 @@ func (h *Handlers) EditComplaint(c *fiber.Ctx) error {
 	})
 }
 
+func (h Handlers) GetComplaintById(c *fiber.Ctx) error {
+	complaintID := c.Params("id")
+	if complaintID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "ID is required in the URL",
+		})
+	}
+	var complaint tables.Complaints
+	result := h.db.Preload("CreatedBy").Preload("Customer").Preload("Comments").First(&complaint, complaintID)
+	if result.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get complaint",
+			"msg":   result.Error.Error(),
+		})
+	}
+
+	return c.JSON(complaint)
+}
+
 func (h *Handlers) GetComplaints(c *fiber.Ctx) error {
 	userId := c.Query("userId")
 	customerId := c.Query("customerId")
