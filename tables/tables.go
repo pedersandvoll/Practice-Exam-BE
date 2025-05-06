@@ -34,12 +34,19 @@ type Complaints struct {
 	Customer    Customers `gorm:"foreignKey:CustomerID"`
 	Description string    `gorm:"type:text"`
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
-	ModifiedAt  time.Time `gorm:"autoCreateTime"`
+	ModifiedAt  time.Time `gorm:"autoUpdateTime"`
 	CreatedByID uint      `gorm:"not null"`
 	CreatedBy   Users     `gorm:"foreignKey:CreatedByID"`
 	Priority    Priority
+	Comments    []Comments `gorm:"foreignKey:ComplaintID"`
+}
+
+type Comments struct {
+	ID          uint   `gorm:"primaryKey"`
+	Comment     string `gorm:"type:text"`
+	ComplaintID uint   `gorm:"not null"`
 }
 
 func RunMigrations(db *gorm.DB) {
-	db.AutoMigrate(&Users{}, &Customers{}, &Complaints{})
+	db.AutoMigrate(&Users{}, &Customers{}, &Complaints{}, &Comments{})
 }

@@ -39,3 +39,36 @@ GET {{host}}/api/customers
 Content-Type: application/json
 Authorization: {{bearer_token}}
 
+### create complaint
+POST {{host}}/api/complaints/create
+Content-Type: application/json
+Authorization: {{bearer_token}}
+
+{
+    "customerid": 1,
+    "description": "This customer called me short"
+}
+
+### edit complaint
+PUT {{host}}/api/complaints/edit/1
+Content-Type: application/json
+Authorization: {{bearer_token}}
+
+{
+    "description": "This customer is not nice to me :(",
+    "priority": 1
+}
+
+### get complaint
+GET {{host}}/api/complaints?sortOrder=desc
+Content-Type: application/json
+Authorization: {{bearer_token}}
+
+### create complaint comment
+POST {{host}}/api/comments/create/1
+Content-Type: application/json
+Authorization: {{bearer_token}}
+
+{
+    "comment": "This is not true i was the customer"
+}
