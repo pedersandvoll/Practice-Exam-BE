@@ -202,8 +202,9 @@ func (h *Handlers) GetCustomers(c *fiber.Ctx) error {
 }
 
 type ComplaintsBody struct {
-	CustomerName string `json:"customername"`
-	Description  string `json:"description"`
+	CustomerName string          `json:"customername"`
+	Description  string          `json:"description"`
+	Priority     tables.Priority `json:"priority"`
 }
 
 func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
@@ -265,7 +266,7 @@ func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
 		CustomerID:  customer.ID,
 		Description: body.Description,
 		CreatedByID: userID,
-		Priority:    tables.Medium,
+		Priority:    body.Priority,
 	}
 	result := h.db.DB.Create(&complaint)
 
