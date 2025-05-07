@@ -39,6 +39,8 @@ type Complaints struct {
 	CreatedBy   Users     `gorm:"foreignKey:CreatedByID"`
 	Priority    Priority
 	Comments    []Comments `gorm:"foreignKey:ComplaintID"`
+	CategoryId  uint       `gorm:"not null"`
+	Category    Categories `gorm:"foreignKey:CategoryId"`
 }
 
 type Comments struct {
@@ -50,6 +52,18 @@ type Comments struct {
 	CreatedBy   Users     `gorm:"foreignKey:CreatedByID"`
 }
 
+type Categories struct {
+	ID        uint      `gorm:"primaryKey"`
+	Name      string    `gorm:"type:text"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+}
+
 func RunMigrations(db *gorm.DB) {
-	db.AutoMigrate(&Users{}, &Customers{}, &Complaints{}, &Comments{})
+	db.AutoMigrate(
+		&Users{},
+		&Customers{},
+		&Complaints{},
+		&Comments{},
+		&Categories{},
+	)
 }

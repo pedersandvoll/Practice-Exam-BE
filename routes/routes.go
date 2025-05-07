@@ -26,4 +26,7 @@ func Routes(app *fiber.App, h *handlers.Handlers) {
 	api.Get("/complaints", h.GetComplaints)
 
 	api.Post("/comments/create/:id", h.AddComplaintComment)
+
+	api.Post("/categories/create", h.RegisterCategory)
+	api.Get("/categories", h.GetCategories)
 }

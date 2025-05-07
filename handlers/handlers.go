@@ -204,6 +204,7 @@ func (h *Handlers) GetCustomers(c *fiber.Ctx) error {
 type ComplaintsBody struct {
 	CustomerName string          `json:"customername"`
 	Description  string          `json:"description"`
+	CategoryId   uint            `json:"categoryid"`
 	Priority     tables.Priority `json:"priority"`
 }
 
@@ -215,7 +216,7 @@ func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
 		})
 	}
 
-	if body.CustomerName == "" || body.Description == "" {
+	if body.CustomerName == "" || body.Description == "" || body.CategoryId == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Customer and description is required",
 		})
@@ -266,6 +267,7 @@ func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
 		CustomerID:  customer.ID,
 		Description: body.Description,
 		CreatedByID: userID,
+		CategoryId:  body.CategoryId,
 		Priority:    body.Priority,
 	}
 	result := h.db.DB.Create(&complaint)
@@ -286,6 +288,7 @@ func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
 
 type EditComplaintBody struct {
 	Description string          `json:"description"`
+	CategoryId  uint            `json:"categoryid"`
 	Priority    tables.Priority `json:"priority"`
 }
 
@@ -303,9 +306,9 @@ func (h *Handlers) EditComplaint(c *fiber.Ctx) error {
 		})
 	}
 
-	if body.Description == "" && body.Priority == -1 {
+	if body.Description == "" || body.Priority == -1 || body.Priority == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Description or priority is required",
+			"error": "Description, priority and category is required",
 		})
 	}
 
@@ -334,12 +337,9 @@ func (h *Handlers) EditComplaint(c *fiber.Ctx) error {
 		})
 	}
 
-	if body.Description != "" {
-		complaint.Description = body.Description
-	}
-	if body.Priority != -1 {
-		complaint.Priority = body.Priority
-	}
+	complaint.Description = body.Description
+	complaint.Priority = body.Priority
+	complaint.CategoryId = body.CategoryId
 
 	result = h.db.Save(&complaint)
 	if result.Error != nil {
@@ -493,4 +493,54 @@ func (h *Handlers) AddComplaintComment(c *fiber.Ctx) error {
 		"message":   "comment created successfully",
 		"commentid": comment.ID,
 	})
+}
+
+type CategoryBody struct {
+	Name string `json:"name"`
+}
+
+func (h *Handlers) RegisterCategory(c *fiber.Ctx) error {
+	var body CategoryBody
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	if body.Name == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Category name is required",
+		})
+	}
+
+	category := tables.Categories{
+		Name: body.Name,
+	}
+	result := h.db.DB.Create(&category)
+
+	if result.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create category",
+			"msg":   result.Error.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message":    "Category created successfully",
+		"customerid": category.ID,
+	})
+}
+
+func (h *Handlers) GetCategories(c *fiber.Ctx) error {
+	var categories []tables.Categories
+	result := h.db.DB.Find(&categories)
+
+	if result.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get categories",
+			"msg":   result.Error.Error(),
+		})
+	}
+
+	return c.JSON(categories)
 }
