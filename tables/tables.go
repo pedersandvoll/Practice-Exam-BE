@@ -42,9 +42,12 @@ type Complaints struct {
 }
 
 type Comments struct {
-	ID          uint   `gorm:"primaryKey"`
-	Comment     string `gorm:"type:text"`
-	ComplaintID uint   `gorm:"not null"`
+	ID          uint      `gorm:"primaryKey"`
+	Comment     string    `gorm:"type:text"`
+	ComplaintID uint      `gorm:"not null"`
+	CreatedAt   time.Time `gorm:"autoCreateTime"`
+	CreatedByID uint      `gorm:"not null"`
+	CreatedBy   Users     `gorm:"foreignKey:CreatedByID"`
 }
 
 func RunMigrations(db *gorm.DB) {

@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -201,8 +202,8 @@ func (h *Handlers) GetCustomers(c *fiber.Ctx) error {
 }
 
 type ComplaintsBody struct {
-	CustomerID  uint   `json:"customerid"`
-	Description string `json:"description"`
+	CustomerName string `json:"customername"`
+	Description  string `json:"description"`
 }
 
 func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
@@ -213,7 +214,7 @@ func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
 		})
 	}
 
-	if body.CustomerID == 0 || body.Description == "" {
+	if body.CustomerName == "" || body.Description == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Customer and description is required",
 		})
@@ -236,8 +237,32 @@ func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
 	}
 	userID := uint(userIDFloat)
 
+	var customer tables.Customers
+	resultCustomer := h.db.Where("name = ?", body.CustomerName).First(&customer)
+
+	if resultCustomer.Error != nil {
+		if errors.Is(resultCustomer.Error, gorm.ErrRecordNotFound) {
+			newCustomer := tables.Customers{Name: body.CustomerName}
+			resultNewCustomer := h.db.DB.Create(&newCustomer)
+
+			if resultNewCustomer.Error != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "Failed to create customer",
+					"msg":   resultNewCustomer.Error.Error(),
+				})
+			}
+
+			customer = newCustomer
+		} else {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to retrieve user",
+				"msg":   resultCustomer.Error.Error(),
+			})
+		}
+	}
+
 	complaint := tables.Complaints{
-		CustomerID:  body.CustomerID,
+		CustomerID:  customer.ID,
 		Description: body.Description,
 		CreatedByID: userID,
 		Priority:    tables.Medium,
@@ -337,7 +362,15 @@ func (h Handlers) GetComplaintById(c *fiber.Ctx) error {
 		})
 	}
 	var complaint tables.Complaints
-	result := h.db.Preload("CreatedBy").Preload("Customer").Preload("Comments").First(&complaint, complaintID)
+	result := h.db.
+		Preload("CreatedBy").
+		Preload("Customer").
+		Preload("Comments", func(db *gorm.DB) *gorm.DB {
+			return db.Order("comments.created_at DESC") // Sort by CreatedAt in descending order
+		}).
+		Preload("Comments.CreatedBy").
+		First(&complaint, complaintID)
+
 	if result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to get complaint",
@@ -354,7 +387,7 @@ func (h *Handlers) GetComplaints(c *fiber.Ctx) error {
 	sortBy := c.Query("sortBy", "created_at")
 	sortOrder := c.Query("sortOrder", "desc")
 
-	query := h.db.Preload("CreatedBy").Preload("Customer").Preload("Comments")
+	query := h.db.Preload("CreatedBy").Preload("Customer").Preload("Comments").Preload("Comments.CreatedBy")
 	if userId != "" {
 		query = query.Where("created_by_id = ?", userId)
 	}
@@ -397,10 +430,17 @@ type CommentBody struct {
 }
 
 func (h *Handlers) AddComplaintComment(c *fiber.Ctx) error {
-	complaintID := c.Params("id")
-	if complaintID == "" {
+	complaintIDStr := c.Params("id")
+	if complaintIDStr == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "ID is required in the URL",
+		})
+	}
+
+	complaintID, err := strconv.ParseUint(complaintIDStr, 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid complaint ID format",
 		})
 	}
 
@@ -417,14 +457,33 @@ func (h *Handlers) AddComplaintComment(c *fiber.Ctx) error {
 		})
 	}
 
+	token := c.Locals("user").(*jwt.Token)
+	if token == nil {
+		fmt.Println("JWT token not found in locals")
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized - Missing JWT token",
+		})
+	}
+	claims := token.Claims.(jwt.MapClaims)
+	userIDFloat, ok := claims["userid"].(float64)
+	if !ok {
+		fmt.Println("Invalid User ID type in JWT.  Expected float64.")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Invalid User ID type in JWT",
+		})
+	}
+	userID := uint(userIDFloat)
+
 	comment := tables.Comments{
-		Comment: body.Comment,
+		ComplaintID: uint(complaintID),
+		Comment:     body.Comment,
+		CreatedByID: userID,
 	}
 	result := h.db.DB.Create(&comment)
 
 	if result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to create customer",
+			"error": "Failed to create comment",
 			"msg":   result.Error.Error(),
 		})
 	}
