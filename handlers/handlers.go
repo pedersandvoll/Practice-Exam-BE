@@ -204,7 +204,7 @@ func (h *Handlers) GetCustomers(c *fiber.Ctx) error {
 type ComplaintsBody struct {
 	CustomerName string          `json:"customername"`
 	Description  string          `json:"description"`
-	CategoryId   uint            `json:"categoryid"`
+	CategoryId   uint            `json:"category"`
 	Priority     tables.Priority `json:"priority"`
 }
 
@@ -288,7 +288,7 @@ func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
 
 type EditComplaintBody struct {
 	Description string          `json:"description"`
-	CategoryId  uint            `json:"categoryid"`
+	CategoryId  uint            `json:"category"`
 	Priority    tables.Priority `json:"priority"`
 }
 
@@ -306,7 +306,7 @@ func (h *Handlers) EditComplaint(c *fiber.Ctx) error {
 		})
 	}
 
-	if body.Description == "" || body.Priority == -1 || body.Priority == 0 {
+	if body.Description == "" || body.Priority == -1 || body.CategoryId == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Description, priority and category is required",
 		})
@@ -370,6 +370,7 @@ func (h Handlers) GetComplaintById(c *fiber.Ctx) error {
 			return db.Order("comments.created_at DESC") // Sort by CreatedAt in descending order
 		}).
 		Preload("Comments.CreatedBy").
+		Preload("Category").
 		First(&complaint, complaintID)
 
 	if result.Error != nil {
@@ -388,7 +389,12 @@ func (h *Handlers) GetComplaints(c *fiber.Ctx) error {
 	sortBy := c.Query("sortBy", "created_at")
 	sortOrder := c.Query("sortOrder", "desc")
 
-	query := h.db.Preload("CreatedBy").Preload("Customer").Preload("Comments").Preload("Comments.CreatedBy")
+	query := h.db.
+		Preload("CreatedBy").
+		Preload("Customer").
+		Preload("Comments").
+		Preload("Comments.CreatedBy").
+		Preload("Category")
 	if userId != "" {
 		query = query.Where("created_by_id = ?", userId)
 	}
