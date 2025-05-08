@@ -220,6 +220,7 @@ type ComplaintsBody struct {
 	Description  string          `json:"description"`
 	CategoryId   uint            `json:"category"`
 	Priority     tables.Priority `json:"priority"`
+	Status       tables.Status   `json:"status"`
 }
 
 func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
@@ -283,6 +284,7 @@ func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
 		CreatedByID: userID,
 		CategoryId:  body.CategoryId,
 		Priority:    body.Priority,
+		Status:      body.Status,
 	}
 	result := h.db.DB.Create(&complaint)
 
@@ -304,6 +306,7 @@ type EditComplaintBody struct {
 	Description string          `json:"description"`
 	CategoryId  uint            `json:"category"`
 	Priority    tables.Priority `json:"priority"`
+	Status      tables.Status   `json:"status"`
 }
 
 func (h *Handlers) EditComplaint(c *fiber.Ctx) error {
@@ -320,9 +323,9 @@ func (h *Handlers) EditComplaint(c *fiber.Ctx) error {
 		})
 	}
 
-	if body.Description == "" || body.Priority == -1 || body.CategoryId == 0 {
+	if body.Description == "" || body.Priority == -1 || body.Status == -1 || body.CategoryId == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Description, priority and category is required",
+			"error": "Description, priority, status and category is required",
 		})
 	}
 
@@ -334,6 +337,16 @@ func (h *Handlers) EditComplaint(c *fiber.Ctx) error {
 			fmt.Println("Invalid priority value:", body.Priority)
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid priority value. Must be High, Medium, or Low.",
+			})
+		}
+	}
+	if body.Status != -1 {
+		isValidPriority := body.Status == tables.New ||
+			body.Status == tables.UnderTreatment ||
+			body.Status == tables.Solved
+		if !isValidPriority {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid status value. Must be New, UnderTreatment, or Solved.",
 			})
 		}
 	}
@@ -353,6 +366,7 @@ func (h *Handlers) EditComplaint(c *fiber.Ctx) error {
 
 	complaint.Description = body.Description
 	complaint.Priority = body.Priority
+	complaint.Status = body.Status
 	complaint.CategoryId = body.CategoryId
 
 	result = h.db.Save(&complaint)

@@ -14,6 +14,14 @@ const (
 	Low
 )
 
+type Status int
+
+const (
+	New Status = iota
+	UnderTreatment
+	Solved
+)
+
 type Users struct {
 	ID        uint      `gorm:"primaryKey"`
 	Name      string    `gorm:"size:100"`
@@ -38,6 +46,7 @@ type Complaints struct {
 	CreatedByID uint      `gorm:"not null"`
 	CreatedBy   Users     `gorm:"foreignKey:CreatedByID"`
 	Priority    Priority
+	Status      Status
 	Comments    []Comments `gorm:"foreignKey:ComplaintID"`
 	CategoryId  uint       `gorm:"not null"`
 	Category    Categories `gorm:"foreignKey:CategoryId"`
