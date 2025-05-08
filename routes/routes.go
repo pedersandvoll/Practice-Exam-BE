@@ -17,6 +17,9 @@ func Routes(app *fiber.App, h *handlers.Handlers) {
 
 	api := app.Group("/api")
 	api.Use(middleware.AuthRequired(h.JWTSecret))
+
+	api.Get("/users", h.GetUsers)
+
 	api.Post("/customers/create", h.RegisterCustomer)
 	api.Get("/customers", h.GetCustomers)
 

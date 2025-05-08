@@ -143,6 +143,20 @@ func (h *Handlers) LoginUser(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"token": t})
 }
 
+func (h *Handlers) GetUsers(c *fiber.Ctx) error {
+	var users []tables.Users
+	result := h.db.DB.Find(&users)
+
+	if result.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get users",
+			"msg":   result.Error.Error(),
+		})
+	}
+
+	return c.JSON(users)
+}
+
 type CustomerBody struct {
 	Name string `json:"name"`
 }
@@ -388,6 +402,7 @@ func (h *Handlers) GetComplaints(c *fiber.Ctx) error {
 	customerId := c.Query("customerId")
 	sortBy := c.Query("sortBy", "created_at")
 	sortOrder := c.Query("sortOrder", "desc")
+	searchValue := c.Query("searchValue")
 
 	query := h.db.
 		Preload("CreatedBy").
@@ -400,6 +415,9 @@ func (h *Handlers) GetComplaints(c *fiber.Ctx) error {
 	}
 	if customerId != "" {
 		query = query.Where("customer_id = ?", customerId)
+	}
+	if searchValue != "" {
+		query = query.Where("LOWER(description) LIKE ?", "%"+strings.ToLower(searchValue)+"%")
 	}
 
 	allowedSortColumns := map[string]bool{
