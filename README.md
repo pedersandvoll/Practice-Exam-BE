@@ -42,21 +42,31 @@ JWT_SECRET=your-secret-key
 
 ## Installation and Running
 
+### Run Docker
+
+```bash
+# Run with Docker Compose (with make)
+make docker-compose
+
+# Run with Docker Compose (without make)
+docker compose up -d --build
+```
+
 ### Local Development
 
 ```bash
-# Build the project
+# Build the project (with make)
 make build
 
-# Run the application
+# Build the project (without make)
+go build -o bin/main main.go
+
+
+# Run the application (with make)
 make run
-```
 
-### Using Docker
-
-```bash
-# Run with Docker Compose
-make docker-compose
+# Run the application (without make)
+go run main.go
 ```
 
 ## API Endpoints
