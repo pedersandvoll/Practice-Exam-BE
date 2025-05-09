@@ -37,19 +37,20 @@ type Customers struct {
 }
 
 type Complaints struct {
-	ID          uint      `gorm:"primaryKey"`
-	CustomerID  uint      `gorm:"not null"`
-	Customer    Customers `gorm:"foreignKey:CustomerID"`
-	Description string    `gorm:"type:text"`
-	CreatedAt   time.Time `gorm:"autoCreateTime"`
-	ModifiedAt  time.Time `gorm:"autoUpdateTime"`
-	CreatedByID uint      `gorm:"not null"`
-	CreatedBy   Users     `gorm:"foreignKey:CreatedByID"`
-	Priority    Priority
-	Status      Status
-	Comments    []Comments `gorm:"foreignKey:ComplaintID"`
-	CategoryId  uint       `gorm:"not null"`
-	Category    Categories `gorm:"foreignKey:CategoryId"`
+	ID            uint      `gorm:"primaryKey"`
+	CustomerID    uint      `gorm:"not null"`
+	Customer      Customers `gorm:"foreignKey:CustomerID"`
+	Description   string    `gorm:"type:text"`
+	ComplaintDate time.Time `gorm:"column:complaint_date" json:"complaint_date"`
+	CreatedAt     time.Time `gorm:"autoCreateTime"`
+	ModifiedAt    time.Time `gorm:"autoUpdateTime"`
+	CreatedByID   uint      `gorm:"not null"`
+	CreatedBy     Users     `gorm:"foreignKey:CreatedByID"`
+	Priority      Priority
+	Status        Status
+	Comments      []Comments `gorm:"foreignKey:ComplaintID"`
+	CategoryId    uint       `gorm:"not null"`
+	Category      Categories `gorm:"foreignKey:CategoryId"`
 }
 
 type Comments struct {

@@ -216,11 +216,12 @@ func (h *Handlers) GetCustomers(c *fiber.Ctx) error {
 }
 
 type ComplaintsBody struct {
-	CustomerName string          `json:"customername"`
-	Description  string          `json:"description"`
-	CategoryId   uint            `json:"category"`
-	Priority     tables.Priority `json:"priority"`
-	Status       tables.Status   `json:"status"`
+	CustomerName  string          `json:"customername"`
+	Description   string          `json:"description"`
+	CategoryId    uint            `json:"category"`
+	Priority      tables.Priority `json:"priority"`
+	Status        tables.Status   `json:"status"`
+	ComplaintDate time.Time       `json:"date"`
 }
 
 func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
@@ -233,13 +234,12 @@ func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
 
 	if body.CustomerName == "" || body.Description == "" || body.CategoryId == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Customer and description is required",
+			"error": "Missing required fields",
 		})
 	}
 
 	token := c.Locals("user").(*jwt.Token)
 	if token == nil {
-		fmt.Println("JWT token not found in locals")
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized - Missing JWT token",
 		})
@@ -247,7 +247,6 @@ func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
 	claims := token.Claims.(jwt.MapClaims)
 	userIDFloat, ok := claims["userid"].(float64)
 	if !ok {
-		fmt.Println("Invalid User ID type in JWT.  Expected float64.")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Invalid User ID type in JWT",
 		})
@@ -279,17 +278,17 @@ func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
 	}
 
 	complaint := tables.Complaints{
-		CustomerID:  customer.ID,
-		Description: body.Description,
-		CreatedByID: userID,
-		CategoryId:  body.CategoryId,
-		Priority:    body.Priority,
-		Status:      body.Status,
+		CustomerID:    customer.ID,
+		Description:   body.Description,
+		CreatedByID:   userID,
+		CategoryId:    body.CategoryId,
+		Priority:      body.Priority,
+		Status:        body.Status,
+		ComplaintDate: body.ComplaintDate,
 	}
 	result := h.db.DB.Create(&complaint)
 
 	if result.Error != nil {
-		fmt.Println("Database error:", result.Error)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create complaint",
 			"msg":   result.Error.Error(),
@@ -303,10 +302,11 @@ func (h *Handlers) RegisterComplaint(c *fiber.Ctx) error {
 }
 
 type EditComplaintBody struct {
-	Description string          `json:"description"`
-	CategoryId  uint            `json:"category"`
-	Priority    tables.Priority `json:"priority"`
-	Status      tables.Status   `json:"status"`
+	Description   string          `json:"description"`
+	CategoryId    uint            `json:"category"`
+	Priority      tables.Priority `json:"priority"`
+	Status        tables.Status   `json:"status"`
+	ComplaintDate time.Time       `json:"date"`
 }
 
 func (h *Handlers) EditComplaint(c *fiber.Ctx) error {
@@ -368,6 +368,7 @@ func (h *Handlers) EditComplaint(c *fiber.Ctx) error {
 	complaint.Priority = body.Priority
 	complaint.Status = body.Status
 	complaint.CategoryId = body.CategoryId
+	complaint.ComplaintDate = body.ComplaintDate
 
 	result = h.db.Save(&complaint)
 	if result.Error != nil {
